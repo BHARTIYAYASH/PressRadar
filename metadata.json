@@ -1,0 +1,5 @@
+{
+  "name": "PressRadar AI",
+  "description": "A multilingual AI news tracker that monitors the web for specific topics and provides summarized updates in English, Hindi, and Marathi.",
+  "requestFramePermissions": []
+}
