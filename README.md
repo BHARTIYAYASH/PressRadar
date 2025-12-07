@@ -1,34 +1,34 @@
 # PressRadar AI - Intelligent News Tracking & Research Tool
 
 ## Overview
-Maine ye project basically specific news topics ko track karne ke liye banaya hai. Research aur market analysis karte waqt alag-alag newspapers aur e-papers check karna mushkil hota hai, isliye **PressRadar AI** ka use karke main ye process automate kar raha hoon.
+I developed this project to solve a specific problem: tracking niche news topics efficiently. When conducting research or market analysis, manually checking different newspapers and e-papers is time-consuming. **PressRadar AI** automates this process.
 
-Ye tool web ko scan karta hai aur mere diye gaye topic par latest news dhoondh kar lata hai. Sabse badhiya baat ye hai ki ye multilingual hai—matlab English, Hindi, aur Marathi mein summary generate kar sakta hai.
+This tool scans the web to find the latest news regarding any topic I provide. The best part is its multilingual capability—it can generate summaries in English, Hindi, and Marathi.
 
 ## Why I Built This?
-Personally, mujhe ek aisi utility chahiye thi jo mere specific research topics (like stock market fluctuations, political updates) ko daily monitor kare without manually visiting 10 different websites.
+Personally, I needed a utility that could daily monitor my specific research topics (like stock market fluctuations or political updates) without me having to manually visit 10 different websites every morning.
 
 ## Key Features
-- **Smart Tracking:** Web aur e-papers scan karke relevant news nikalta hai.
-- **Multilingual Summaries:** Results ko Hindi, Marathi, ya English mein summarize karta hai.
-- **Source Verification:** Har news ke saath original source links provide karta hai taaki credibility maintain rahe.
-- **Research Focused:** Factual accuracy par focus hai, opinions par nahi.
+- **Smart Tracking:** Scans web sources and e-papers to extract relevant news.
+- **Multilingual Summaries:** Summarizes results in Hindi, Marathi, or English based on preference.
+- **Source Verification:** Provides original source links with every news item to maintain credibility.
+- **Research Focused:** Prioritizes factual accuracy over opinion pieces.
 
 ## Tech Stack
-Is project ko banane ke liye maine ye technologies use ki hain:
-- **Frontend:** React.js (sabse fast UI development ke liye)
-- **Styling:** Tailwind CSS (clean aur modern look ke liye)
-- **AI Intelligence:** Gemini API (Google Search Grounding feature ka use karke real-time data fetch karne ke liye)
+I used the following technologies to build this project:
+- **Frontend:** React.js (for fast and responsive UI development)
+- **Styling:** Tailwind CSS (for a clean, modern aesthetic)
+- **AI Intelligence:** Gemini API (Leveraging Google Search Grounding to fetch real-time data)
 
 ## How It Works
-1. **Topic Input:** Main bas apna topic enter karta hoon (e.g., "Tata Motors Share Price").
-2. **AI Processing:** Backend mein AI model (Gemini 2.5 Flash) live web search karta hai.
-3. **Data Extraction:** Relevant articles aur sources extract kiye jate hain.
-4. **Summary Generation:** User ki selected language mein ek clean summary generate hoti hai.
+1. **Topic Input:** I simply enter my topic (e.g., "Tata Motors Share Price").
+2. **AI Processing:** The backend AI model (Gemini 2.5 Flash) performs a live web search.
+3. **Data Extraction:** Relevant articles and sources are extracted.
+4. **Summary Generation:** A clean summary is generated in the selected language.
 
 ## Future Plans
-- Isme "Saved Stories" ka feature add karna hai taaki purani research save rahe.
-- Email notifications integration for daily alerts.
+- Add a "Saved Stories" feature to archive past research.
+- Integrate email notifications for daily alerts.
 
 ---
 *Created for personal research and news aggregation purposes.*
