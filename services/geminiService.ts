@@ -1,51 +1,46 @@
 import { GoogleGenAI } from "@google/genai";
 import { Language, NewsResult, WebSource } from "../types";
 
-// API Key environment variable se le rahe hain
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
 export const trackNewsTopic = async (topic: string, language: Language): Promise<NewsResult> => {
-  // Pehle check kar rahe hain ki API Key available hai ya nahi
   if (!apiKey) {
-    throw new Error("API Key missing hai. Process.env.API_KEY set karna padega.");
+    throw new Error("API Key missing. Please check your environment configuration.");
   }
 
-  // Hum gemini-2.5-flash use kar rahe hain taaki search results fast aur grounded milein.
-  // googleSearch tool use karne se model real-time news dhoondh pata hai.
   try {
     const prompt = `
-      You are a professional news analyst.
-      Task: Search for the latest and most relevant news articles regarding the topic: "${topic}".
+      Role: You are a senior News Archivist and Editor for a major newspaper desk.
+      Task: Track down the latest coverage for the specific topic: "${topic}".
       
-      Requirements:
-      1. Analyze the search results.
-      2. Write a comprehensive, professional news summary.
-      3. The output MUST be written in ${language}.
-      4. Focus on factual accuracy and recent events.
-      5. Do not include your own opinion, just summarize the found news.
-      6. If the topic is financial or political, look for recent market movements or policy changes.
+      Directives:
+      1. Search specifically for how this topic is being covered in major daily newspapers (both print and e-paper editions) and credible news websites.
+      2. If the user asks about a specific e-paper source (like tradingref.com or similar), try to find if there is public news matching that context, but prioritize finding the *actual news content* from primary sources (Times of India, Hindustan Times, The Hindu, Economic Times, global dailies etc.).
+      3. Construct a "Daily Briefing" style summary.
+      4. Language: Output MUST be in ${language}.
+      5. Tone: Formal, journalistic, objective (like a newspaper report).
+      6. Date Relevance: Focus on the last 24-48 hours.
+      7. Highlight if this topic is "Front Page" worthy material.
+      
+      Output Format:
+      Provide a cohesive news narrative. Do not use bullet points unless listing specific stats. Write it like a column.
     `;
 
-    // Model ko call kar rahe hain content generate karne ke liye
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
-        temperature: 0.3, // Thoda kam temperature rakha hai taaki factual reporting mile
+        temperature: 0.3,
       },
     });
 
-    const summaryText = response.text || "Summary generate nahi ho payi.";
+    const summaryText = response.text || "No report could be filed for this topic at this hour.";
 
-    // Grounding chunks extract kar rahe hain taaki sources verify ho sakein.
-    // SDK ka structure vary kar sakta hai, isliye safely access kar rahe hain.
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    
     const sources: WebSource[] = [];
     
-    // Har chunk se web source nikal kar list mein add kar rahe hain
     groundingChunks.forEach((chunk: any) => {
       if (chunk.web) {
         sources.push({
@@ -55,14 +50,12 @@ export const trackNewsTopic = async (topic: string, language: Language): Promise
       }
     });
 
-    // Duplicate sources ko remove kar rahe hain taaki list clean rahe aur repeated links na dikhein
     const uniqueSources = sources.filter((source, index, self) =>
       index === self.findIndex((t) => (
         t.uri === source.uri
       ))
     );
 
-    // Final result object return kar rahe hain jo frontend pe dikhega
     return {
       id: crypto.randomUUID(),
       topic,
@@ -74,6 +67,6 @@ export const trackNewsTopic = async (topic: string, language: Language): Promise
 
   } catch (error: any) {
     console.error("Gemini News Tracking Error:", error);
-    throw new Error(error.message || "News track karne mein kuch issue aa gaya.");
+    throw new Error(error.message || "Failed to retrieve news from the wire.");
   }
 };

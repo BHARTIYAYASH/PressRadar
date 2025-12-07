@@ -3,20 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PressRadar AI</title>
+    <title>PressRadar AI - The Daily Chronicle</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Special+Elite&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              headline: ['"Cinzel"', 'serif'],
+              body: ['"Merriweather"', 'serif'],
+              typewriter: ['"Special Elite"', 'monospace'],
+            },
             colors: {
-              news: {
-                50: '#f4f6f8',
-                100: '#e4e8eb',
-                500: '#64748b',
-                800: '#1e293b',
-                900: '#0f172a',
-              }
+              'vintage-paper': '#E8E4D9',
+              'vintage-paper-dark': '#D8D4C9',
+              'vintage-ink': '#2C2C2C',
+              'vintage-red': '#8A0303',
+              'vintage-gold': '#B8860B',
+              'vintage-brown': '#5D4037',
+            },
+            backgroundImage: {
+              'paper-texture': "url('https://www.transparenttextures.com/patterns/cream-paper.png')",
+            },
+            boxShadow: {
+              'paper': '2px 2px 5px rgba(0,0,0,0.1), 1px 1px 0 rgba(0,0,0,0.1)',
+              'depth': '10px 10px 20px rgba(0,0,0,0.2)',
             }
           }
         }
@@ -32,8 +49,42 @@
   }
 }
 </script>
+<style>
+  body {
+    background-color: #E8E4D9;
+  }
+  
+  /* Vintage scrollbar */
+  ::-webkit-scrollbar {
+    width: 14px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #D8D4C9;
+    border-left: 1px solid #8B7355;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #5D4037;
+    border: 2px solid #D8D4C9;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3E2723;
+  }
+  
+  .blend-multiply {
+    mix-blend-mode: multiply;
+  }
+  
+  .jagged-edge {
+    clip-path: polygon(
+      0% 0%, 100% 0%, 100% 100%, 
+      98% 99%, 96% 100%, 94% 99%, 92% 100%, 90% 99%, 88% 100%, 86% 99%, 84% 100%, 82% 99%, 80% 100%, 78% 99%, 76% 100%, 74% 99%, 72% 100%, 70% 99%, 68% 100%, 66% 99%, 64% 100%, 62% 99%, 60% 100%, 58% 99%, 56% 100%, 54% 99%, 52% 100%, 50% 99%, 48% 100%, 46% 99%, 44% 100%, 42% 99%, 40% 100%, 38% 99%, 36% 100%, 34% 99%, 32% 100%, 30% 99%, 28% 100%, 26% 99%, 24% 100%, 22% 99%, 20% 100%, 18% 99%, 16% 100%, 14% 99%, 12% 100%, 10% 99%, 8% 100%, 6% 99%, 4% 100%, 2% 99%, 
+      0% 100%
+    );
+  }
+</style>
 </head>
-  <body class="bg-gray-50 text-slate-900 antialiased">
+  <body class="bg-vintage-paper text-vintage-ink antialiased font-body overflow-hidden">
     <div id="root"></div>
   </body>
 </html>

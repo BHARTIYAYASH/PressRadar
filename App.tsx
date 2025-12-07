@@ -3,186 +3,229 @@ import { Language, NewsResult, TrackerState } from './types';
 import { trackNewsTopic } from './services/geminiService';
 import { LanguageSelector } from './components/LanguageSelector';
 import { NewsCard } from './components/NewsCard';
+import { NewspaperBackground } from './components/NewspaperBackground';
 
 const App: React.FC = () => {
-  // State variables define kar rahe hain topic, language aur results ke liye
   const [topic, setTopic] = useState('');
   const [language, setLanguage] = useState<Language>(Language.ENGLISH);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [savedTopics, setSavedTopics] = useState<string[]>([]);
   const [state, setState] = useState<TrackerState>({
     isLoading: false,
     error: null,
     results: []
   });
 
-  // Track button click hone par ye function chalega
-  const handleTrack = useCallback(async (e?: React.FormEvent) => {
+  const handleTrack = useCallback(async (e?: React.FormEvent, overrideTopic?: string) => {
     if (e) e.preventDefault();
-    if (!topic.trim()) return; // Agar topic khali hai toh return kar do
+    const searchTopic = overrideTopic || topic;
+    if (!searchTopic.trim()) return;
 
-    // Loading state set kar rahe hain taaki user ko spinner dikhe
+    if (!overrideTopic && !savedTopics.includes(searchTopic)) {
+      setSavedTopics(prev => [searchTopic, ...prev]);
+    }
+
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Service call karke news fetch kar rahe hain
-      const result = await trackNewsTopic(topic, language);
-      
-      // Naya result existing results ke upar add kar rahe hain (prepend)
+      const result = await trackNewsTopic(searchTopic, language);
       setState(prev => ({
         ...prev,
         isLoading: false,
         results: [result, ...prev.results] 
       }));
     } catch (err: any) {
-      // Agar koi error aata hai toh state update kar rahe hain
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: err.message || "News track karte waqt kuch unexpected error aaya."
+        error: err.message || "Telegraph line down. Could not fetch news."
       }));
     }
-  }, [topic, language]);
+  }, [topic, language, savedTopics]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="relative h-screen w-full flex bg-[#E8E4D9] overflow-hidden font-body">
       
-      {/* Sidebar Navigation section yahan hai */}
-      <aside className="w-full md:w-64 bg-news-900 text-white flex-shrink-0">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-            </svg>
-            PressRadar
-          </h1>
-          <p className="text-xs text-gray-400 mt-2">Intelligent News Tracker</p>
+      {/* Vintage Background */}
+      <NewspaperBackground />
+
+      {/* Sidebar Navigation - The "Archive" */}
+      <aside 
+        className={`
+          relative z-50 flex flex-col bg-[#F5F1E6] border-r-2 border-vintage-ink transition-all duration-300 ease-in-out shadow-depth
+          ${isSidebarOpen ? 'w-80' : 'w-20'}
+        `}
+      >
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cardboard-flat.png')] opacity-20 pointer-events-none"></div>
+
+        {/* Toggle Button (Bookmark style) */}
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="absolute -right-4 top-10 w-8 h-12 bg-vintage-red text-[#F5F1E6] flex items-center justify-center hover:bg-[#600202] shadow-md z-50 rounded-r-md border-y border-r border-vintage-ink/50"
+        >
+           {isSidebarOpen ? (
+             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+           ) : (
+             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+           )}
+        </button>
+
+        <div className={`p-6 border-b-4 border-double border-vintage-ink ${!isSidebarOpen && 'flex justify-center p-4'}`}>
+          {isSidebarOpen ? (
+            <div className="text-center">
+               <h1 className="text-4xl font-headline font-black text-vintage-ink tracking-tight">PRESS<br/>RADAR</h1>
+               <div className="w-16 h-1 bg-vintage-red mx-auto my-2"></div>
+               <p className="font-typewriter text-xs text-vintage-brown">EST. 2025 • DAILY EDITION</p>
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-vintage-ink text-[#F5F1E6] flex items-center justify-center font-headline text-2xl font-bold rounded-full border-2 border-[#F5F1E6]">
+              P
+            </div>
+          )}
         </div>
 
-        <nav className="mt-6 px-4">
-          <div className="space-y-2">
-            <a href="#" className="flex items-center px-4 py-3 bg-blue-600 text-white rounded-md shadow-lg transition-transform transform hover:scale-105">
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              Live Tracker
-            </a>
-            {/* Abhi ye features disabled hain, baad mein implement karenge */}
-            <div className="px-4 py-3 text-gray-400 cursor-not-allowed flex items-center opacity-50">
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
-              Saved Stories
-            </div>
-            <div className="px-4 py-3 text-gray-400 cursor-not-allowed flex items-center opacity-50">
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-              Settings
-            </div>
-          </div>
-        </nav>
-        
-        <div className="p-6 mt-auto">
-             <div className="bg-news-800 rounded p-4 text-xs text-gray-400">
-                <p className="mb-2 font-semibold text-gray-300">Supported Sources:</p>
-                <p>Global news aur e-papers jo Google index karta hai, unko monitor karta hai.</p>
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+           {/* Navigation Links */}
+           <nav className="space-y-2">
+             {['The Desk', 'Archives', 'Wire Service', 'Settings'].map((item, idx) => (
+               <div 
+                  key={item} 
+                  className={`
+                    cursor-pointer border-b border-vintage-ink/20 py-3 hover:bg-vintage-ink/5 transition-colors
+                    ${idx === 0 ? 'font-bold text-vintage-red' : 'text-vintage-ink'}
+                    ${!isSidebarOpen ? 'flex justify-center' : 'px-2'}
+                  `}
+               >
+                  {isSidebarOpen ? (
+                     <span className="font-headline text-lg uppercase tracking-wider">{item}</span>
+                  ) : (
+                     <span className="font-headline text-xl">{item[0]}</span>
+                  )}
+               </div>
+             ))}
+           </nav>
+
+           {/* Saved Topics (Tracking) */}
+           {isSidebarOpen && (
+             <div className="mt-8">
+               <h3 className="font-typewriter text-xs font-bold text-vintage-brown uppercase mb-3 border-b border-vintage-brown pb-1">
+                 Tracking List
+               </h3>
+               {savedTopics.length === 0 ? (
+                 <p className="text-xs italic text-gray-500 font-body">No keywords stored in ledger.</p>
+               ) : (
+                 <ul className="space-y-2">
+                   {savedTopics.map((saved, idx) => (
+                     <li key={idx} className="flex items-center group cursor-pointer" onClick={() => { setTopic(saved); handleTrack(undefined, saved); }}>
+                       <span className="w-2 h-2 bg-vintage-red rounded-full mr-2 group-hover:scale-125 transition-transform"></span>
+                       <span className="font-typewriter text-sm text-vintage-ink truncate decoration-vintage-red group-hover:underline">
+                         {saved}
+                       </span>
+                     </li>
+                   ))}
+                 </ul>
+               )}
              </div>
+           )}
         </div>
+        
+        {isSidebarOpen && (
+          <div className="p-4 bg-[#EAE6DA] border-t-2 border-vintage-ink">
+             <div className="flex items-center justify-between">
+                <span className="font-typewriter text-[0.6rem] uppercase">System Status</span>
+                <span className="w-2 h-2 bg-green-700 rounded-full animate-pulse"></span>
+             </div>
+             <p className="font-headline text-xs font-bold mt-1">TELETYPE ACTIVE</p>
+          </div>
+        )}
       </aside>
 
-      {/* Ye main content area hai jahan news dikhegi */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-        
+      {/* Main Content Area */}
+      <main className="flex-1 relative z-10 overflow-y-auto h-full p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           
-          {/* Header Section */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-news-900">Dashboard</h2>
-            <p className="text-news-500 mt-2">
-              Specific news topic enter karo taaki main newspapers aur e-papers scan kar sakun.
+          {/* Main Title Block */}
+          <div className="mb-8 text-center border-b-4 border-double border-vintage-ink pb-6 relative">
+            <span className="absolute top-0 left-0 font-typewriter text-xs text-vintage-brown hidden md:block">VOL. DCCXXV</span>
+            <span className="absolute top-0 right-0 font-typewriter text-xs text-vintage-brown hidden md:block">PRICE: 2 ANNAS</span>
+            
+            <h2 className="text-5xl md:text-7xl font-headline font-black uppercase leading-none text-vintage-ink mb-2">
+              The Daily <span className="text-vintage-red">Briefing</span>
+            </h2>
+            <p className="font-typewriter text-sm md:text-base text-vintage-ink bg-[#F5F1E6] inline-block px-4 py-1 border border-vintage-ink transform -rotate-1 shadow-sm">
+              YOUR PERSONAL NEWS AGGREGATOR & ARCHIVIST
             </p>
           </div>
 
-          {/* Input section jahan user topic enter karega */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-            <form onSubmit={handleTrack} className="space-y-6">
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2">
-                   <label htmlFor="topic" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                      Target News Topic
+          {/* Search/Input Panel */}
+          <div className="bg-[#F5F1E6] p-6 border-2 border-vintage-ink shadow-paper mb-10 relative">
+            <div className="absolute -top-3 left-6 bg-vintage-ink text-[#F5F1E6] px-3 py-1 font-typewriter text-xs tracking-widest uppercase">
+               Request New Report
+            </div>
+            
+            <form onSubmit={(e) => handleTrack(e)} className="space-y-6 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div className="md:col-span-8">
+                   <label htmlFor="topic" className="block font-headline font-bold text-lg mb-2 text-vintage-ink">
+                      Subject Matter
                    </label>
-                   <input
-                    id="topic"
-                    type="text"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g., Tata Motors Share Price, Maharashtra Election Results..."
-                    className="block w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   />
+                   <div className="relative">
+                     <input
+                      id="topic"
+                      type="text"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      placeholder="e.g. 'Tata Motors', 'Monsoon Update'..."
+                      className="w-full p-3 bg-[#E8E4D9] border-b-2 border-vintage-ink font-typewriter text-lg focus:outline-none focus:bg-white transition-colors placeholder:text-gray-500/50 text-vintage-ink"
+                     />
+                     <div className="absolute bottom-0 right-0 mb-3 mr-3 text-vintage-red opacity-50">
+                       ✎
+                     </div>
+                   </div>
                 </div>
                 
-                <div>
+                <div className="md:col-span-4">
                   <LanguageSelector selected={language} onChange={setLanguage} />
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-between items-center pt-4 border-t border-vintage-ink/20 border-dashed">
+                <span className="text-[0.6rem] font-typewriter text-gray-500 w-1/2">
+                   *System searches daily e-papers and web indices for mentions.
+                </span>
                 <button
                   type="submit"
                   disabled={state.isLoading || !topic}
                   className={`
-                    inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white 
-                    bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                    transition-all duration-200
-                    ${state.isLoading ? 'opacity-75 cursor-wait' : ''}
+                    px-6 py-2 bg-vintage-ink text-[#F5F1E6] font-headline font-bold text-lg uppercase tracking-wider border border-transparent
+                    hover:bg-vintage-red transition-all shadow-paper active:translate-y-1
+                    ${state.isLoading ? 'opacity-80 cursor-wait' : ''}
                   `}
                 >
-                  {state.isLoading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Scanning Sources...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      Track News
-                    </>
-                  )}
+                  {state.isLoading ? 'FETCHING WIRE...' : 'DISPATCH'}
                 </button>
               </div>
             </form>
           </div>
 
-          {/* Error Message Section */}
+          {/* Error Message */}
           {state.error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{state.error}</p>
-                </div>
-              </div>
+            <div className="mb-8 bg-[#F8d7da] border-2 border-vintage-red p-4 flex items-center text-vintage-red font-typewriter">
+              <span className="text-2xl mr-4">⚠</span>
+              <p>{state.error}</p>
             </div>
           )}
 
-          {/* Results List display kar rahe hain */}
-          <div className="space-y-6">
+          {/* Results Feed */}
+          <div className="space-y-12 pb-12">
             {state.results.length === 0 && !state.isLoading && !state.error && (
-              <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No tracking results yet</h3>
-                <p className="mt-1 text-sm text-gray-500">Upar topic enter karo taaki scanning shuru ho sake.</p>
+              <div className="flex flex-col items-center justify-center p-12 opacity-60">
+                 <div className="w-16 h-16 border-4 border-vintage-ink rounded-full flex items-center justify-center mb-4">
+                    <span className="font-headline text-3xl">?</span>
+                 </div>
+                 <p className="font-typewriter text-vintage-ink text-center">
+                   The desk is clear.<br/>Enter a topic to receive the latest wire dispatch.
+                 </p>
               </div>
             )}
             
