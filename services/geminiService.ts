@@ -4,28 +4,74 @@ import { Language, NewsResult, WebSource } from "../types";
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
-export const trackNewsTopic = async (topic: string, language: Language): Promise<NewsResult> => {
+interface TrackOptions {
+  topic?: string;
+  language: Language;
+  selectedSources: string[];
+  includeEPapers: boolean;
+  isWireRequest?: boolean;
+}
+
+export const trackNewsTopic = async (options: TrackOptions): Promise<NewsResult> => {
   if (!apiKey) {
     throw new Error("API Key missing. Please check your environment configuration.");
   }
 
+  const { topic, language, selectedSources, includeEPapers, isWireRequest } = options;
+
   try {
-    const prompt = `
-      Role: You are a senior News Archivist and Editor for a major newspaper desk.
-      Task: Track down the latest coverage for the specific topic: "${topic}".
-      
-      Directives:
-      1. Search specifically for how this topic is being covered in major daily newspapers (both print and e-paper editions) and credible news websites.
-      2. If the user asks about a specific e-paper source (like tradingref.com or similar), try to find if there is public news matching that context, but prioritize finding the *actual news content* from primary sources (Times of India, Hindustan Times, The Hindu, Economic Times, global dailies etc.).
-      3. Construct a "Daily Briefing" style summary.
-      4. Language: Output MUST be in ${language}.
-      5. Tone: Formal, journalistic, objective (like a newspaper report).
-      6. Date Relevance: Focus on the last 24-48 hours.
-      7. Highlight if this topic is "Front Page" worthy material.
-      
-      Output Format:
-      Provide a cohesive news narrative. Do not use bullet points unless listing specific stats. Write it like a column.
-    `;
+    let sourceInstruction = "";
+    if (selectedSources.length > 0) {
+      sourceInstruction = `
+        STRICT SOURCE FILTERING:
+        You must prioritize information ONLY from the following publications: ${selectedSources.join(", ")}.
+        If news is not available in these specific sources, explicitly state that in the opening sentence.
+      `;
+    }
+
+    let ePaperInstruction = "";
+    if (includeEPapers) {
+      ePaperInstruction = `
+        E-PAPER & PDF SEARCH:
+        The user is specifically looking for "E-Paper" or digital print editions. 
+        - Actively search for mentions or links from 'tradingref.com', 'epaper.thehindu.com', 'epaper.timesgroup.com', etc.
+        - If you find a direct PDF or E-Paper viewer link, highlight it at the top of the summary.
+      `;
+    }
+
+    let prompt = "";
+
+    if (isWireRequest) {
+      prompt = `
+        Role: You are a Wire Service Operator (like PTI or Reuters).
+        Task: Fetch the "Top 5 Critical News Headlines" for India and Global Markets right now.
+        
+        Directives:
+        1. Ignore specific topics. Give me the most important breaking news in the last 6 hours.
+        2. Language: Output in ${language}.
+        3. Format: Return a clean list. Use asterisks for bolding headlines like this: **HEADLINE**. 
+        4. Structure:
+           - **HEADLINE 1**: Brief summary.
+           - **HEADLINE 2**: Brief summary.
+        5. Tone: Urgent, factual, telegraphic style. Avoid introductory fluff like "Here are the headlines". Start directly with the news.
+      `;
+    } else {
+      prompt = `
+        Role: You are a senior News Archivist and Editor.
+        Task: Track coverage for the topic: "${topic}".
+        
+        ${sourceInstruction}
+        
+        ${ePaperInstruction}
+        
+        Directives:
+        1. Search for recent coverage (last 24-48 hours).
+        2. Language: Output in ${language}.
+        3. Tone: Formal, journalistic.
+        4. Formatting: Use **Bold** for key entities or stats. Break into paragraphs.
+        5. Structure: Write a cohesive "Editor's Note" or column about how this story is developing.
+      `;
+    }
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -36,7 +82,7 @@ export const trackNewsTopic = async (topic: string, language: Language): Promise
       },
     });
 
-    const summaryText = response.text || "No report could be filed for this topic at this hour.";
+    const summaryText = response.text || "No wire dispatch received.";
 
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const sources: WebSource[] = [];
@@ -58,11 +104,12 @@ export const trackNewsTopic = async (topic: string, language: Language): Promise
 
     return {
       id: crypto.randomUUID(),
-      topic,
+      topic: isWireRequest ? "WIRE SERVICE DISPATCH" : (topic || "Unknown Topic"),
       summary: summaryText,
       language,
-      timestamp: new Date(),
-      sources: uniqueSources
+      timestamp: new Date().toISOString(),
+      sources: uniqueSources,
+      isWire: isWireRequest
     };
 
   } catch (error: any) {

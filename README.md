@@ -1,4 +1,4 @@
-# PressRadar  - Intelligent News Tracking & Research Tool
+# PressRadar AI - Intelligent News Tracking & Research Tool
 
 ## Overview
 I developed this project to solve a specific problem: tracking niche news topics efficiently. When conducting research or market analysis, manually checking different newspapers and e-papers is time-consuming. **PressRadar AI** automates this process.
