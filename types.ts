@@ -1,3 +1,4 @@
+
 export enum Language {
   ENGLISH = 'English',
   HINDI = 'Hindi',
@@ -14,9 +15,27 @@ export interface NewsResult {
   topic: string;
   summary: string;
   language: Language;
-  timestamp: string; // Changed to string for serialization in localStorage
+  timestamp: string;
   sources: WebSource[];
-  isWire?: boolean; // To distinguish between topic search and generic wire feed
+  isWire?: boolean;
+  isWatchlistReport?: boolean;
+}
+
+export interface TrackedTopic {
+  id: string;
+  keyword: string;
+  context: string;
+  language: Language;
+  lastChecked?: string;
+  createdAt: string;
+  isActive: boolean;
+}
+
+export interface UserProfile {
+  name: string;
+  bureau: string;
+  idNumber: string;
+  isRegistered: boolean;
 }
 
 export interface TrackerState {
@@ -25,7 +44,6 @@ export interface TrackerState {
   results: NewsResult[];
 }
 
-// List of predefined sources for the user to select
 export const PREDEFINED_SOURCES = [
   "The Times of India",
   "The Hindu",

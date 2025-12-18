@@ -1,8 +1,8 @@
-import { GoogleGenAI } from "@google/genai";
-import { Language, NewsResult, WebSource } from "../types";
 
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+import { GoogleGenAI } from "@google/genai";
+import { Language, NewsResult, WebSource, TrackedTopic } from "../types";
+
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 interface TrackOptions {
   topic?: string;
@@ -10,110 +10,92 @@ interface TrackOptions {
   selectedSources: string[];
   includeEPapers: boolean;
   isWireRequest?: boolean;
+  context?: string;
 }
 
 export const trackNewsTopic = async (options: TrackOptions): Promise<NewsResult> => {
-  if (!apiKey) {
-    throw new Error("API Key missing. Please check your environment configuration.");
-  }
-
-  const { topic, language, selectedSources, includeEPapers, isWireRequest } = options;
+  const { topic, language, selectedSources, includeEPapers, isWireRequest, context } = options;
 
   try {
     let sourceInstruction = "";
     if (selectedSources.length > 0) {
-      sourceInstruction = `
-        STRICT SOURCE FILTERING:
-        You must prioritize information ONLY from the following publications: ${selectedSources.join(", ")}.
-        If news is not available in these specific sources, explicitly state that in the opening sentence.
-      `;
-    }
-
-    let ePaperInstruction = "";
-    if (includeEPapers) {
-      ePaperInstruction = `
-        E-PAPER & PDF SEARCH:
-        The user is specifically looking for "E-Paper" or digital print editions. 
-        - Actively search for mentions or links from 'tradingref.com', 'epaper.thehindu.com', 'epaper.timesgroup.com', etc.
-        - If you find a direct PDF or E-Paper viewer link, highlight it at the top of the summary.
-      `;
+      sourceInstruction = `STRICT SOURCE FILTERING: Prioritize info from: ${selectedSources.join(", ")}.`;
     }
 
     let prompt = "";
-
     if (isWireRequest) {
-      prompt = `
-        Role: You are a Wire Service Operator (like PTI or Reuters).
-        Task: Fetch the "Top 5 Critical News Headlines" for India and Global Markets right now.
-        
-        Directives:
-        1. Ignore specific topics. Give me the most important breaking news in the last 6 hours.
-        2. Language: Output in ${language}.
-        3. Format: Return a clean list. Use asterisks for bolding headlines like this: **HEADLINE**. 
-        4. Structure:
-           - **HEADLINE 1**: Brief summary.
-           - **HEADLINE 2**: Brief summary.
-        5. Tone: Urgent, factual, telegraphic style. Avoid introductory fluff like "Here are the headlines". Start directly with the news.
-      `;
+      prompt = `Role: Wire Service Operator. Fetch Top 10 Critical News Headlines for India/Global in ${language}. Start directly with bullet points. Tone: Urgent. Include as much detail as possible for each headline.`;
     } else {
       prompt = `
-        Role: You are a senior News Archivist and Editor.
-        Task: Track coverage for the topic: "${topic}".
-        
+        Role: Lead Investigative Journalist & Intelligence Officer.
+        Subject: "${topic}"
+        Context: "${context || 'General news tracking'}"
+        Language: ${language}
         ${sourceInstruction}
         
-        ${ePaperInstruction}
+        Task: Provide an EXHAUSTIVE and COMPLETE intelligence briefing. Do not summarize briefly. 
+        I need a full report covering all facets of the latest developments from the last 24-48 hours.
         
-        Directives:
-        1. Search for recent coverage (last 24-48 hours).
-        2. Language: Output in ${language}.
-        3. Tone: Formal, journalistic.
-        4. Formatting: Use **Bold** for key entities or stats. Break into paragraphs.
-        5. Structure: Write a cohesive "Editor's Note" or column about how this story is developing.
+        Requirements:
+        1. STRUCTURE: Use a clear headline, followed by a multi-section report (Introduction, Key Findings, Local Impact, Future Outlook).
+        2. DETAIL: Provide specific names, dates, amounts, and locations. 
+        3. CITATIONS: Mention the newspaper or source name within the text when reporting a specific fact (e.g., "According to The Hindu...").
+        4. COMPLETENESS: Ensure the report reaches a logical conclusion. Do not cut off mid-sentence.
+        
+        Formatting: Use **Bold** for names and figures. Use paragraphs.
       `;
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
-        temperature: 0.3,
+        temperature: 0.1, // Lower temperature for more factual consistency
+        maxOutputTokens: 2500, // Increased to prevent "half" news
       },
     });
 
-    const summaryText = response.text || "No wire dispatch received.";
-
+    const summaryText = response.text || "Dispatch received but empty.";
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    const sources: WebSource[] = [];
-    
-    groundingChunks.forEach((chunk: any) => {
-      if (chunk.web) {
-        sources.push({
-          uri: chunk.web.uri,
-          title: chunk.web.title || new URL(chunk.web.uri).hostname,
-        });
-      }
-    });
-
-    const uniqueSources = sources.filter((source, index, self) =>
-      index === self.findIndex((t) => (
-        t.uri === source.uri
-      ))
-    );
+    const sources: WebSource[] = groundingChunks
+      .filter((chunk: any) => chunk.web)
+      .map((chunk: any) => ({
+        uri: chunk.web.uri,
+        title: chunk.web.title || new URL(chunk.web.uri).hostname,
+      }));
 
     return {
       id: crypto.randomUUID(),
-      topic: isWireRequest ? "WIRE SERVICE DISPATCH" : (topic || "Unknown Topic"),
+      topic: isWireRequest ? "WIRE DISPATCH" : (topic || "Unknown"),
       summary: summaryText,
       language,
       timestamp: new Date().toISOString(),
-      sources: uniqueSources,
+      sources: sources.filter((v, i, a) => a.findIndex(t => t.uri === v.uri) === i),
       isWire: isWireRequest
     };
-
   } catch (error: any) {
-    console.error("Gemini News Tracking Error:", error);
-    throw new Error(error.message || "Failed to retrieve news from the wire.");
+    throw new Error(error.message || "Telegraph signal lost.");
   }
+};
+
+export const runWatchlistScan = async (topics: TrackedTopic[]): Promise<NewsResult[]> => {
+  const activeTopics = topics.filter(t => t.isActive);
+  const results: NewsResult[] = [];
+
+  for (const item of activeTopics) {
+    try {
+      const res = await trackNewsTopic({
+        topic: item.keyword,
+        language: item.language,
+        selectedSources: [],
+        includeEPapers: false,
+        context: item.context
+      });
+      results.push({ ...res, isWatchlistReport: true });
+    } catch (e) {
+      console.error(`Failed to scan topic: ${item.keyword}`);
+    }
+  }
+  return results;
 };
